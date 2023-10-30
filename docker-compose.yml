@@ -10,6 +10,7 @@ services:
       - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+
   django-app:
     build:
       context: ./backend
@@ -20,18 +21,31 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - POSTGRES_DB=postgres
+      - POSTGRES_NAME=postgres
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     depends_on:
       - db
+
+  django-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: python3 manage.py test
+    volumes:
+      - ./backend:/code
+    environment:
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    depends_on:
+      - db
+
   angular-app:
     build:
       context: ./frontend
-      dockerfile: Dockerfile  # Specify the Dockerfile for the Angular service
+      dockerfile: Dockerfile
     ports:
-      - "4200:4200"  # Map port 4200 from the host to port 4200 in the container
+      - "4200:4200"
     depends_on:
-     - django-app
-
-
+      - django-app

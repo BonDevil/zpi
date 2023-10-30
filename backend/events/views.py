@@ -126,6 +126,7 @@ class RegistrationResponseViewSet(viewsets.ModelViewSet):
             'id': 'id',
             'content': 'content__iexact',
         }
+
         queryset = RegistrationResponse.objects.all()
         query_params = self.request.query_params
         for param, lookup in filter_params.items():
