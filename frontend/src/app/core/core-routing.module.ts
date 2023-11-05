@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
-import { authGuard } from '../auth.guard';
+import { AuthGuard } from '../auth.guard';
 import { LayoutComponent } from './layout/layout/layout.component';
 import { HomeComponent } from './home/home.component';
 import { LoginComponent } from './account/login/login.component';
@@ -35,15 +35,15 @@ const routes: Routes = [
       }, {
         path: 'profile',
         component: ProfileComponent,
-        canActivate: [authGuard] 
+        canActivate: [AuthGuard] 
       }, {
         path: 'profile/edit',
         component: EditProfileComponent,
-        canActivate: [authGuard] 
+        canActivate: [AuthGuard] 
       }, {
         path: 'my-events',
         component: MyEventsComponent,
-        canActivate: [authGuard] 
+        canActivate: [AuthGuard] 
       },{
         path: 'events',
         component: EventsCatalogComponent
@@ -53,15 +53,15 @@ const routes: Routes = [
       }, {
         path: 'event/sign-up',
         component: SignUpComponent,
-        canActivate: [authGuard] 
+        canActivate: [AuthGuard] 
       }, {
         path: 'event/edit',
         component: EditEventComponent,
-        canActivate: [authGuard] 
+        canActivate: [AuthGuard] 
       }, {
         path: 'create-event',
         component: CreateEventComponent,
-        canActivate: [authGuard] 
+        canActivate: [AuthGuard] 
       }
     ]
   }, 

@@ -5,15 +5,15 @@
     <input class="form-control me-2" type="search" placeholder="Search by title" (input)="filterbyTitle(searchTitle.value)" #searchTitle>
   </form>
   <div class="btn-group flex-wrap">
-    <!-- Dropdown Button for Tags Selection -->
+    <!-- Dropdown Button for Categories Selection -->
     <div class="dropdown">
       <button class="btn btn-light dropdown-toggle mb-3 me-2 me-md-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-        Filter by Tags
+        Filter by Categories
       </button>
       <ul class="dropdown-menu p-2">
-        <li *ngFor="let tag of tags">
+        <li *ngFor="let category of categories">
           <label class="form-check-label" style="display: block;" >
-            <input type="checkbox" class="form-check-input" [checked]="isTagSelected(tag)" (change)="filterByTag(tag)"> {{ tag }}
+            <input type="checkbox" class="form-check-input" [checked]="isCategorySelected(category)" (change)="filterByCategory(category)"> {{ category }}
           </label>
         </li>
       </ul>
@@ -45,22 +45,21 @@
       <ul class="dropdown-menu p-2">
         <li *ngFor="let acc of accessibility">
           <label class="form-check-label" style="display: block;" >
-            <input type="checkbox" class="form-check-input" [checked]="isAccSelected(acc)" (change)="filterByAccessibility(acc)"> {{ acc }}
+            <input type="radio" class="form-check-input" [value]="acc" [checked]="acc === filters.accessibility" (change)="filterByAccessibility(acc)"> {{ acc }}
           </label>
         </li>
       </ul>
     </div>
   </div>
   <!-- Selected Filters List -->
-  <div id="selectedFilters" *ngIf="(filters?.tags?.length ?? 0) > 0 || (filters?.accessibility?.length ?? 0) > 0 || filters?.startDate || filters?.endDate">
+  <div id="selectedFilters" *ngIf="(filters?.categories?.length ?? 0) > 0 || (filters?.accessibility?.length ?? 0) > 0 || filters?.startDate || filters?.endDate">
     <div class="btn-group mb-3">
-      <button *ngFor="let selectedTag of filters?.tags" type="button" class="btn btn-secondary me-md-2" (click)="removeSelectedTag(selectedTag)">
-        {{ selectedTag }}
+      <button *ngFor="let selectedCategory of filters?.categories" type="button" class="btn btn-secondary me-md-2" (click)="removeSelectedCategory(selectedCategory)">
+        {{ selectedCategory }}
         <i class="fa fa-times"></i>
       </button>
-      <button *ngFor="let selectedAcc of filters?.accessibility" type="button" class="btn btn-secondary me-md-2" (click)="removeSelectedAcc(selectedAcc)">
-        {{ selectedAcc }}
-        <i class="fa fa-times"></i>
+      <button type="button" class="btn btn-secondary me-md-2">
+        {{ filters.accessibility }}
       </button>
       <div *ngIf="filters?.startDate" class="btn btn-secondary me-md-2" (click)="clearStartDateFilter()">
         Start Date: {{ filters.startDate | date:'dd MMM yy' }}
@@ -75,9 +74,9 @@
 
   <!-- Event Cards -->
   <div class="row">
-    <div class="col-md-6" *ngFor="let event of filteredEvents">
+    <div class="col-md-6" *ngFor="let event of events">
       <div class="card mb-4" (click)="onCardClick(event)">
-        <img src="{{ event.image }}" class="card-img-top" alt="{{ event.title }}">
+        <img src="{{ event.photo }}" class="card-img-top" alt="{{ event.title }}">
         <div class="card-body">
           <h5 class="card-title">{{ event.title }}</h5>
           <div class="card-text mb-2">
@@ -90,7 +89,7 @@
           </div>
           <div class="card-text mb-2">
             <i class="fa fa-tag" style="width: 20px;"></i>
-            {{ event.tags.join(', ') }}
+            {{ event.categories?.join(', ') }}
           </div>
         </div>
       </div>

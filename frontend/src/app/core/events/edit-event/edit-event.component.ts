@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EventService } from '../event.service';
+import { Event } from '../../models';
 
 @Component({
   selector: 'app-edit-event',
@@ -9,68 +10,83 @@ import { EventService } from '../event.service';
   styleUrls: ['./edit-event.component.css']
 })
 export class EditEventComponent implements OnInit {
-  createEventForm!: FormGroup;
-  tags: string[] = [];
-  selectedTags: string[] = [];
-  newTag: string = '';
+  editEventForm!: FormGroup;
+  categories: string[] = [];
+  selectedCategories: string[] = [];
+  newCategory: string = '';
   eventId!: number;
-  event: any;
+  event!: Event;
 
   constructor(private fb: FormBuilder, private route: ActivatedRoute, private router: Router, private eventService: EventService) {
-
+    this.editEventForm = this.fb.group({
+      title: ['', Validators.required],
+      description: ['', Validators.required],
+      location: ['', Validators.required],
+      isPublic: [false],
+      price: [null],
+      capacity: [null],
+      registrationEndDate: [null],
+      startDate: [null],
+      endDate: [null],
+      photo: [null]
+    });
   }
 
-  ngOnInit(): void {
-    this.tags = this.eventService.getTags();
-    this.route.queryParamMap.subscribe(params => {
+  async ngOnInit() {
+    this.categories = await this.eventService.getCategories();
+    this.route.queryParamMap.subscribe(async params => {
       const eventId = params.get('id');
       if (eventId) {
         this.eventId = parseInt(eventId, 10)
-        this.event = this.eventService.getEventById(this.eventId);
+        this.event = await this.eventService.getEventById(this.eventId);
+        this.editEventForm = this.fb.group({
+          title: [this.event.title, Validators.required],
+          description: [this.event.description, Validators.required],
+          location: [this.event.location, Validators.required],
+          isPublic: [this.event.isPublic],
+          price: [this.event.price],
+          capacity: [this.event.capacity],
+          registrationEndDate: [this.event.registrationEndDate],
+          startDate: [this.event.startDate],
+          endDate: [this.event.endDate],
+          photo: [this.event.photo]
+        });
+        if(this.event.categories){
+          this.selectedCategories = this.event.categories;
+        }
       }
     });
-    this.createEventForm = this.fb.group({
-      title: [this.event.title, Validators.required],
-      description: [this.event.description, Validators.required],
-      location: [this.event.location, Validators.required],
-      isPublic: [this.event.isPublic],
-      price: [this.event.price],
-      capacity: [this.event.capacity],
-      registrationEndDate: [this.event.registrationEndDate],
-      startDate: [this.event.startDate],
-      endDate: [this.event.endDate],
-      image: [this.event.image]
-    });
-    this.selectedTags = this.event.tags;
+    
   }
 
-  publish() {
-    const formData = this.createEventForm.value;
-    if (this.createEventForm.valid) {
-      let newEvent = this.createEventForm.value as Event;
-      this.eventService.editEvent(this.eventId, newEvent);
+  async publish() {
+    const formData = this.editEventForm.value;
+    if (this.editEventForm.valid) {
+      let newEvent = this.editEventForm.value as Event;
+      newEvent.categories = this.selectedCategories;
+      await this.eventService.editEvent(this.eventId, newEvent);
       this.router.navigate(['/event'], {
         queryParams: { id: this.eventId }
       });
     }
   }
 
-  addTag(tag: string) {
-    if (!this.isTagSelected(tag)) {
-      this.selectedTags.push(tag);
+  addCategory(category: string) {
+    if (!this.isCategorySelected(category)) {
+      this.selectedCategories.push(category);
     }
   }
   
-  removeSelectedTag(tagToRemove: string) {
-    if (this.selectedTags !== null) {
-      const index = this.selectedTags.indexOf(tagToRemove);
+  removeSelectedCategory(categoryToRemove: string) {
+    if (this.selectedCategories !== null) {
+      const index = this.selectedCategories.indexOf(categoryToRemove);
       if (index !== -1) {
-        this.selectedTags.splice(index, 1);
+        this.selectedCategories.splice(index, 1);
       }
     }
   }
 
-  isTagSelected(tag: string): boolean {
-    return this.selectedTags !== null && this.selectedTags.includes(tag);
+  isCategorySelected(category: string): boolean {
+    return this.selectedCategories !== null && this.selectedCategories.includes(category);
   }
 }

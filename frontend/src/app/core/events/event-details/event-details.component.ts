@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
 import { EventService } from '../event.service';
 import { AccountService } from '../../account/account.service';
+import { Event } from '../../models';
 
 @Component({
   selector: 'app-event-details',
@@ -11,17 +12,18 @@ import { AccountService } from '../../account/account.service';
 })
 export class EventDetailsComponent {
   eventId!: number;
-  event: any;
+  event!: Event;
   isSignUpDisabled = false;
 
   constructor(private route: ActivatedRoute, private router: Router, private eventService: EventService, private authService: AccountService) { }
 
   ngOnInit() {
-    this.route.queryParamMap.subscribe(params => {
+    this.route.queryParamMap.subscribe(async params => {
       const eventId = params.get('id');
       if (eventId) {
         this.eventId = parseInt(eventId, 10)
-        this.event = this.eventService.getEventById(this.eventId);
+        this.event = await this.eventService.getEventById(this.eventId);
+        console.log(this.event);
       }
     });
     if (!this.event.isPublic && !this.authService.isLoggedIn()) {
@@ -60,8 +62,8 @@ export class EventDetailsComponent {
     });
   }
 
-  delete() {
-    this.eventService.deleteEvent(this.eventId);
+  async delete() {
+    await this.eventService.deleteEvent(this.eventId);
     this.goBack();
   }
 }

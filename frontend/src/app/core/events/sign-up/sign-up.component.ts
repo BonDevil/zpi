@@ -22,14 +22,14 @@ export class SignUpComponent {
     });
    }
 
-  ngOnInit() {
+  async ngOnInit() {
     this.route.queryParamMap.subscribe(params => {
       const eventId = params.get('id');
       if (eventId) {
         this.eventId = parseInt(eventId, 10)
       }
     });
-    this.event = this.eventService.getEventById(this.eventId);
+    this.event = await this.eventService.getEventById(this.eventId);
 
     if (!this.event || (!this.event.isPublic && !this.authService.isLoggedIn())) {
       this.router.navigate(['/login']);

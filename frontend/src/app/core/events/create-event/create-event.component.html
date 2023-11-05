@@ -23,8 +23,8 @@
             
                 <!-- Event Image -->
                 <div class="form-group mb-3">
-                    <label for="image">Event Image:</label>
-                    <input type="file" class="form-control-file" id="image" formControlName="image">
+                    <label for="photo">Event Image:</label>
+                    <input type="file" class="form-control-file" id="photo" formControlName="photo">
                 </div>
             
                 <!-- Event Location -->
@@ -77,22 +77,22 @@
                     <input type="datetime-local" class="form-control" id="endDate" formControlName="endDate">
                 </div>
                   
-                <!-- Tags -->
+                <!-- Categories -->
                 <div class="form-group mb-3">
-                    <label for="newTag">Add Tags</label>
+                    <label for="newCategory">Add Categoriess</label>
                     <div class="input-group">
-                      <input type="text" class="form-control" list="datalistOptions" id="exampleDataList" placeholder="Enter tag" autocomplete="off" #newTag>
+                      <input type="text" class="form-control" list="datalistOptions" id="exampleDataList" placeholder="Enter category" autocomplete="off" #newCategory>
                         <datalist id="datalistOptions">
-                            <option *ngFor="let tag of tags" [value]="tag"></option>
+                            <option *ngFor="let category of categories" [value]="category"></option>
                         </datalist>    
                       <div class="input-group-append">
-                        <button class="btn btn-primary" type="button" (click)="addTag(newTag.value)">Add</button>
+                        <button class="btn btn-primary" type="button" (click)="addCategory(newCategory.value)">Add</button>
                       </div>
                     </div>
                   </div>
                   <div class="btn-group mb-3">
-                    <button *ngFor="let selectedTag of selectedTags" type="button" class="btn btn-secondary me-md-2" (click)="removeSelectedTag(selectedTag)">
-                      {{ selectedTag }}
+                    <button *ngFor="let selectedCategory of selectedCategories" type="button" class="btn btn-secondary me-md-2" (click)="removeSelectedCategory(selectedCategory)">
+                      {{ selectedCategory }}
                       <i class="fa fa-times"></i>
                     </button>
                 </div>

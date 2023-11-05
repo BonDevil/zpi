@@ -15,8 +15,8 @@ export class MyEventsComponent implements OnInit {
   constructor(private router: Router, private route: ActivatedRoute, private eventService: EventService) { 
   }
 
-  ngOnInit() {
-    this.events = this.eventService.listMyEvents(1);
+  async ngOnInit() {
+    this.events = await this.eventService.listMyEvents(1);
   }  
 
   onCardClick(event: any) {
@@ -27,11 +27,11 @@ export class MyEventsComponent implements OnInit {
     });
   }
 
-  filterbyRole(role: number) {
+  async filterbyRole(role: number) {
     if (role === 1) {
-      this.events = this.eventService.listMyEvents(1);
+      this.events = await this.eventService.listMyEvents(1);
     } else if (role === 2) {
-      this.events = this.eventService.listMyEvents(2);
+      this.events = await this.eventService.listMyEvents(2);
     }
   }
   
