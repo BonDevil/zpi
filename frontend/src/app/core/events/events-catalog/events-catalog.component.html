@@ -1,0 +1,98 @@
+<div class="container">
+  <h1 class="my-4">Upcoming Events</h1>
+  <!-- Search Bar -->
+  <form class="d-flex mb-3" role="search">
+    <input class="form-control me-2" type="search" placeholder="Search by title" (input)="filterbyTitle(searchTitle.value)" #searchTitle>
+  </form>
+  <div class="btn-group flex-wrap">
+    <!-- Dropdown Button for Categories Selection -->
+    <div class="dropdown">
+      <button class="btn btn-light dropdown-toggle mb-3 me-2 me-md-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        Filter by Categories
+      </button>
+      <ul class="dropdown-menu p-2">
+        <li *ngFor="let category of categories">
+          <label class="form-check-label" style="display: block;" >
+            <input type="checkbox" class="form-check-input" [checked]="isCategorySelected(category)" (change)="filterByCategory(category)"> {{ category }}
+          </label>
+        </li>
+      </ul>
+    </div>
+    <!-- Dropdown Button for Dates Selection -->
+    <div class="dropdown">
+      <button class="btn btn-light dropdown-toggle mb-3 me-2 me-md-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        Filter by Dates
+      </button>
+      <ul class="dropdown-menu p-2">
+        <div class="mb-3">
+          <label for="startDate">Start Date:</label>
+          <input type="date" id="startDate" class="form-control" #startDate>
+        </div>
+        <div class="mb-3">
+          <label for="endDate">End Date:</label>
+          <input type="date" id="endDate" class="form-control" #endDate>
+        </div>
+        <div>
+          <button class="btn btn-primary" (click)="filterByDates(startDate.value, endDate.value)">Filter</button>
+        </div>
+      </ul>
+    </div>
+    <!-- Dropdown Button for Accessibility Selection -->
+    <div class="dropdown">
+      <button class="btn btn-light dropdown-toggle mb-3 me-2 me-md-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        Filter by Accessibility
+      </button>
+      <ul class="dropdown-menu p-2">
+        <li *ngFor="let acc of accessibility">
+          <label class="form-check-label" style="display: block;" >
+            <input type="radio" class="form-check-input" [value]="acc" [checked]="acc === filters.accessibility" (change)="filterByAccessibility(acc)"> {{ acc }}
+          </label>
+        </li>
+      </ul>
+    </div>
+  </div>
+  <!-- Selected Filters List -->
+  <div id="selectedFilters" *ngIf="(filters?.categories?.length ?? 0) > 0 || (filters?.accessibility?.length ?? 0) > 0 || filters?.startDate || filters?.endDate">
+    <div class="btn-group mb-3">
+      <button *ngFor="let selectedCategory of filters?.categories" type="button" class="btn btn-secondary me-md-2" (click)="removeSelectedCategory(selectedCategory)">
+        {{ selectedCategory }}
+        <i class="fa fa-times"></i>
+      </button>
+      <button type="button" class="btn btn-secondary me-md-2">
+        {{ filters.accessibility }}
+      </button>
+      <div *ngIf="filters?.startDate" class="btn btn-secondary me-md-2" (click)="clearStartDateFilter()">
+        Start Date: {{ filters.startDate | date:'dd MMM yy' }}
+        <i class="fa fa-times"></i>
+      </div>
+      <div *ngIf="filters?.endDate" class="btn btn-secondary me-md-2" (click)="clearEndDateFilter()">
+        End Date: {{ filters.endDate | date:'dd MMM yy' }}
+        <i class="fa fa-times"></i>
+      </div>
+    </div>
+  </div>  
+
+  <!-- Event Cards -->
+  <div class="row">
+    <div class="col-md-6" *ngFor="let event of events">
+      <div class="card mb-4" (click)="onCardClick(event)">
+        <img src="{{ event.photo }}" class="card-img-top" alt="{{ event.title }}">
+        <div class="card-body">
+          <h5 class="card-title">{{ event.title }}</h5>
+          <div class="card-text mb-2">
+            <i class="fa fa-calendar" style="width: 20px;"></i>
+            {{ event.startDate | date:'dd MMM yyyy, HH:mm' }}
+          </div>
+          <div class="card-text mb-2">
+            <i class="fa fa-location-arrow" style="width: 20px;"></i>
+            {{ event.location }}
+          </div>
+          <div class="card-text mb-2">
+            <i class="fa fa-tag" style="width: 20px;"></i>
+            {{ event.categories?.join(', ') }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
