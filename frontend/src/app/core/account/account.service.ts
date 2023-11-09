@@ -1,12 +1,23 @@
-import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, firstValueFrom, map } from 'rxjs';
+import { HttpClient, HttpRequest, HttpInterceptor, HttpHandler, HttpEvent, } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { BehaviorSubject, firstValueFrom, map, Observable } from 'rxjs';
 import { User } from '../models';
+import { CookieService} from 'ngx-cookie-service';
+
+@Injectable()
+export class NoopInterceptor implements HttpInterceptor {
+  intercept(req: HttpRequest<any>, next: HttpHandler):
+    Observable<HttpEvent<any>> {
+      return next.handle(req);
+    }
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class AccountService {
+  cookieService = inject(CookieService);
+  cookieValue = '';
   private isAuthenticated: boolean = false;
   private userIdSubject: BehaviorSubject<any> = new BehaviorSubject(null);
   public userId$ = this.userIdSubject.asObservable();
@@ -25,11 +36,28 @@ export class AccountService {
       email: email,
       password: password
     };
+
+    /*
+    const httpOptions = {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/json'
+      }),
+      observe: 'response'
+    };
+    console.log(this.http.post<any>('http://127.0.0.1:8000/api/accounts/login', userData, httpOptions));
+*/
+
+    
+
     const userId = await firstValueFrom(
       this.http.post<User>('http://127.0.0.1:8000/api/accounts/login', userData).pipe(
         map(data => data.id)
       )
     );
+
+    //save a test cookie
+    this.cookieService.set('test', 'hello');
+    this.cookieValue = this.cookieService.get('test');
     
     console.log("Logged in with id ", userId);
     if (userId) {
