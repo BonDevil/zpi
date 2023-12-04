@@ -24,6 +24,8 @@ export class EventService {
     price_greater_than: null
   };
 
+  formData: FormData = new FormData();
+
   constructor(private http: HttpClient, private accountService: AccountService) {
   }
   async listEvents(): Promise<Event[]> {
@@ -181,7 +183,7 @@ export class EventService {
         }
       }
       // Create FormData object and append form data
-      const formData = new FormData();
+      const formData: any = new FormData();
 
       formData.append('title', event.title);
       formData.append('description', event.description);
@@ -198,20 +200,21 @@ export class EventService {
       }
       if (event.categories) {
         event.categories.forEach((category, index) => {
-          formData.append(`categories[${index}]`, category);
+          formData.append('categories', category);
         });
       }
       if (event.photo instanceof File) {
-        formData.append('photo', event.photo);
+        formData.append('photo', event.photo, event.photo?.name);
       }
+      console.log(formData);
       const options = {
         withCredentials: true,
         headers: {
-          'X-CSRFToken': this.accountService.getCsrfToken()
+          'X-CSRFToken': this.accountService.getCsrfToken(),
         },
       };
       const eventResp = await firstValueFrom(
-        this.http.post<Event>(`http://127.0.0.1:8000/api/events/`, event, options).pipe()
+        this.http.post<Event>(`http://127.0.0.1:8000/api/events/`, formData, options).pipe()
       );
       console.log("Added event: " + eventResp);
       const eventId = eventResp.id;
@@ -266,20 +269,20 @@ export class EventService {
       }
       if (updatedEvent.categories) {
         updatedEvent.categories.forEach((category, index) => {
-          formData.append(`categories[${index}]`, category);
+          formData.append('categories', category);
         });
       }
       if (updatedEvent.photo instanceof File) {
-        formData.append('photo', updatedEvent.photo);
+        formData.append('photo', updatedEvent.photo, updatedEvent.photo?.name);
       }
       const options = {
         withCredentials: true,
         headers: {
-          'X-CSRFToken': this.accountService.getCsrfToken()
+          'X-CSRFToken': this.accountService.getCsrfToken(),
         },
       };
       const eventResp = await firstValueFrom(
-        this.http.put<Event>(`http://127.0.0.1:8000/api/events/${eventId}/`, updatedEvent, options).pipe()
+        this.http.put<Event>(`http://127.0.0.1:8000/api/events/${eventId}/`, formData, options).pipe()
       );
       console.log("Updated event " + eventId + ". New value: ", eventResp);
     } catch (error) {
