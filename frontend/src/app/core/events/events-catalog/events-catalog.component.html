@@ -131,6 +131,9 @@
     <div class="col-md-6" *ngFor="let event of recommended">
       <div class="d-flex h-100">
       <div class="card mb-4 flex-fill" (click)="onCardClick(event)">
+        <div class="card-text mb-2" style="color: dodgerblue;">
+          You may like this
+        </div>
         <img src="{{ event.photo }}" class="card-img-top" alt="{{ event.title }}">
         <div class="card-body">
           <h5 class="card-title"><i class="fa fa-star" aria-hidden="true"></i> {{ event.title }}</h5>
