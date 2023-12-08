@@ -33,8 +33,9 @@ export class EventsCatalogComponent implements OnInit {
   async ngOnInit() {
     this.categories = await this.eventService.getCategories();
     this.filters = this.eventService.filters;
-    this.events = await this.eventService.listEvents();
     this.recommended = await this.eventService.listRecommended();
+    this.events = await this.eventService.listEvents();
+    this.events = this.events.filter(event => !this.recommended.some(recommendedEvent => recommendedEvent.id === event.id));
   }  
 
   onCardClick(event: any) {
@@ -47,8 +48,9 @@ export class EventsCatalogComponent implements OnInit {
 
   async applyFilter() {
     this.eventService.filters = this.filters;
-    this.events = await this.eventService.listEvents();
     this.recommended = await this.eventService.listRecommended();
+    this.events = await this.eventService.listEvents();
+    this.events = this.events.filter(event => !this.recommended.some(recommendedEvent => recommendedEvent.id === event.id));
     console.log(this.events);
   }
 
