@@ -1,6 +1,9 @@
+import logging
 import uuid
 
 from django.contrib.auth import login, logout, update_session_auth_hash
+from django.contrib.auth.hashers import make_password
+from django.utils.crypto import get_random_string
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import permissions, status
 from rest_framework.authentication import SessionAuthentication
@@ -8,10 +11,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from events import my_permissions
+from events.mailing_system import send_notification
 from events.models import EventRegistration
 from events.tasks import send_verification_email
 from .models import AppUser
-from .serializers import UserRegisterSerializer, UserLoginSerializer, UserSerializer, PasswordChangeSerializer
+from .serializers import UserRegisterSerializer, UserLoginSerializer, UserSerializer, PasswordChangeSerializer, \
+    ResetPasswordSerializer, VerificationSerializer
+
+logger = logging.getLogger(__name__)
 
 
 class UserRegister(APIView):
@@ -248,3 +255,53 @@ class VerifyUserEmail(APIView):
 
         return Response({"message": "Email verified successfully. Your account is now active."},
                         status=status.HTTP_200_OK)
+
+
+class ResetPassword(APIView):
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = [SessionAuthentication]
+
+    def post(self, request, *args, **kwargs):
+        serializer = ResetPasswordSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            email = serializer.validated_data['email']
+            try:
+                user = AppUser.objects.get(email=email)
+
+                # Generate a random verification code
+                verification_code = get_random_string(length=6, allowed_chars='0123456789')
+                user.verification_code = verification_code
+                user.save()
+
+                send_notification(
+                    emails=[email],
+                    subject="Password Reset Verification Code",
+                    content=f"Your verification code is: {verification_code}"
+                )
+
+                return Response({"message": "Verification code sent to your email"}, status=status.HTTP_200_OK)
+
+            except AppUser.DoesNotExist:
+                return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+class VerifyAndUpdatePassword(APIView):
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = [SessionAuthentication]
+
+    def post(self, request, *args, **kwargs):
+        serializer = VerificationSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            password_change_code = serializer.validated_data['password_change_code']
+            new_password = serializer.validated_data['new_password']
+            email = serializer.validated_data['email']
+            user = AppUser.objects.filter(email=email, password_change_code=password_change_code).first()
+
+            if user:
+                user.password = make_password(new_password)
+                user.password_change_code = None  # Clear the verification code
+                user.save()
+
+                return Response({"message": "Password has been reset successfully"}, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": "Invalid verification code"}, status=status.HTTP_400_BAD_REQUEST)
