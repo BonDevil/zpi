@@ -22,7 +22,7 @@ class AppUserManager(BaseUserManager):
         if not password:
             raise ValueError('A password is required.')
 
-        user = self.create_user(email, password=password, username=username)
+        user = self.create_user(email, password=password, username=username, is_active=True)
         user.is_superuser = True
         user.is_staff = True  # Ensure superusers have is_staff set to True
         user.save()
