@@ -116,4 +116,21 @@
           </div>
         </div>
     </div>
+
+    <!-- Participants Section -->
+    <div class="mt-4" *ngIf="isOrganiser">
+        <h5>Participants</h5>
+        <ul class="list-group">
+            <li *ngFor="let participant of participants" class="list-group-item">
+                <div class="d-flex align-items-center">
+                    <div class="me-2">
+                        <i class="fa fa-envelope" style="font-size: 24px;"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <p>{{ participant }}</p>
+                    </div>
+                </div>
+            </li>
+        </ul>
+        </div>
 </div>

@@ -20,6 +20,7 @@ export class EventDetailsComponent {
   isOver = false;
   newComment: string = '';
   editingIndex: number | null = null;
+  participants: string[] = [];
 
   constructor(private route: ActivatedRoute, private router: Router, private eventService: EventService, private authService: AccountService) { }
 
@@ -35,6 +36,7 @@ export class EventDetailsComponent {
       if ((!this.event.is_public && !this.authService.isLoggedIn()) || this.event.remaining_slots == 0) {
         this.isSignUpDisabled = true;
       }
+      this.participants = await this.eventService.getRegistrations(this.eventId);
       this.isOrganiser = await this.eventService.isOrganiser(this.eventId);
       console.log("isOrganiser:", this.isOrganiser);
       this.isSignedUp = await this.eventService.isSignedUp(this.eventId);

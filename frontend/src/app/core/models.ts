@@ -8,6 +8,7 @@
     event: number;
     event_detail?: Event;
     is_registered: boolean;
+    user_email?: string;
   }
   
   export interface Event {

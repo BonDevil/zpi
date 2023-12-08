@@ -173,6 +173,35 @@ export class EventService {
     }
   }
 
+    // Retrieve event details by ID
+    async getRegistrations(eventId: number): Promise<string[]> {
+      try {
+        if(await this.isOrganiser(eventId)){
+          console.log("Getting event registrations of id=" + eventId);
+          let params = new HttpParams();
+          params = params.set('event', eventId);
+          const options = {
+            withCredentials: true,
+            params: params
+          };
+          const eventRegistration = await firstValueFrom(
+            this.http.get<EventRegistration[]>(`http://127.0.0.1:8000/api/event-registrations/`, options).pipe()
+          );
+          const filteredRegistrations: EventRegistration[] = eventRegistration.filter(
+            registration => registration.event === eventId
+          );
+          const userEmails: string[] = filteredRegistrations.map(registration => registration.user_email || "");
+          console.log(userEmails);
+          return userEmails;
+        }
+        return [];
+        
+      } catch (error) {
+        console.error('Error during GET event registrations HTTP request:', error);
+        throw error;
+      }
+    }
+
   // Add a new event
   async addEvent(event: Event): Promise<number> {
     try {
