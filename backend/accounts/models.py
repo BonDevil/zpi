@@ -53,6 +53,7 @@ class AppUser(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
     verification_code = models.CharField(max_length=100, blank=True, null=True)
+    password_change_code = models.CharField(max_length=100, blank=True, null=True)
     user_id = models.AutoField(primary_key=True)
     email = models.EmailField(max_length=255, unique=True)
     username = models.CharField(max_length=50)
