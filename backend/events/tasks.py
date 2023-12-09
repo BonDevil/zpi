@@ -43,7 +43,7 @@ def send_verification_email(email, verification_code, event_id=None, user_id=Non
     if event_id is None:
         verification_link = f"http://127.0.0.1:8000/api/accounts/verify-registration?code={verification_code}&user_id={user_id}"
     else:
-        verification_link = f"http://127.0.0.1:8000/verify-guest-registration?code={verification_code}&event_id={event_id}"
+        verification_link = f"http://127.0.0.1:8000/api/verify-guest-registration?code={verification_code}&event_id={event_id}"
     # Send the email (you can use your preferred email backend)
     try:
         send_mail(
