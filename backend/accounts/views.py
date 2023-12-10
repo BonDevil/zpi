@@ -5,6 +5,7 @@ import uuid
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.hashers import make_password
 from django.utils.crypto import get_random_string
+from smtplib import SMTPException
 
 # Swagger documentation utility
 from drf_yasg.utils import swagger_auto_schema
@@ -54,24 +55,29 @@ class UserRegister(APIView):
         # Deserialize and validate the incoming data
         serializer = UserRegisterSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            # Save the new user to the database
-            user = serializer.save()
+            # Create a user instance from the validated data
+            user = AppUser(**serializer.validated_data)
 
             # Generate a unique verification code
             verification_code = str(uuid.uuid4())
             user.verification_code = verification_code
-            user.save()
 
-            # Send a verification email to the user
-            send_verification_email(user.email, verification_code, user_id=user.user_id)  # Implement this function
-            # Add 'id' to the response data
-            response_data = serializer.data
-            response_data['id'] = user.user_id
-            return Response(response_data, status=status.HTTP_201_CREATED)
+            # Try sending a verification email
+            try:
+                send_verification_email(user.email, verification_code, user_id=user.user_id)
+                # Save the user to the database only after successful email sending
+                user.save()
+
+                # Prepare the response data
+                response_data = serializer.data
+                response_data['id'] = user.id
+                return Response(response_data, status=status.HTTP_201_CREATED)
+            except SMTPException:
+                # Handle SMTP errors
+                return Response({"error": "SMTP Server is not available"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         # If data is invalid, return an error response
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class UserLogin(APIView):
     """
