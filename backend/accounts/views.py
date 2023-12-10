@@ -1,34 +1,45 @@
 import logging
 import uuid
 
+# Django imports for authentication, session management, and hashing
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.hashers import make_password
 from django.utils.crypto import get_random_string
+
+# Swagger documentation utility
 from drf_yasg.utils import swagger_auto_schema
+
+# REST framework imports for permissions, status codes, and session authentication
 from rest_framework import permissions, status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+# Imports from local modules for permissions, mailing system, models, tasks, and serializers
 from events import my_permissions
 from events.mailing_system import send_notification
 from events.models import EventRegistration
 from events.tasks import send_verification_email
 from .models import AppUser
-from .serializers import UserRegisterSerializer, UserLoginSerializer, UserSerializer, PasswordChangeSerializer, \
+from .serializers import (
+    UserRegisterSerializer, UserLoginSerializer, UserSerializer, PasswordChangeSerializer,
     ResetPasswordSerializer, VerificationSerializer
+)
 
+# Setting up a logger for this module
 logger = logging.getLogger(__name__)
 
 
 class UserRegister(APIView):
     """
-    post:
-    Register a new user.
+    API view for registering a new user.
     """
+    # Allow any user to access this view
     permission_classes = [permissions.AllowAny]
+    # Use session authentication
     authentication_classes = [SessionAuthentication]
 
+    # Auto-generate Swagger documentation for this view
     @swagger_auto_schema(
         operation_summary="Register a new user",
         operation_description="Create a new user account with email, username, and password.",
@@ -40,33 +51,37 @@ class UserRegister(APIView):
         tags=['User Authentication']
     )
     def post(self, request):
+        # Deserialize and validate the incoming data
         serializer = UserRegisterSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
+            # Save the new user to the database
             user = serializer.save()
 
-            # Generate a verification code
+            # Generate a unique verification code
             verification_code = str(uuid.uuid4())
             user.verification_code = verification_code
             user.save()
 
-            # Send verification email
+            # Send a verification email to the user
             send_verification_email(user.email, verification_code, user_id=user.user_id)  # Implement this function
-            # Include 'id' in the response data
+            # Add 'id' to the response data
             response_data = serializer.data
             response_data['id'] = user.user_id
             return Response(response_data, status=status.HTTP_201_CREATED)
 
+        # If data is invalid, return an error response
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserLogin(APIView):
     """
-    post:
-    Authenticate a user and start a session.
+    API view for user login.
     """
+    # Permissions and authentication classes for the view
     permission_classes = [permissions.AllowAny]
     authentication_classes = [SessionAuthentication]
 
+    # Swagger schema for documentation
     @swagger_auto_schema(
         operation_description="Login a user.",
         request_body=UserLoginSerializer,
@@ -77,21 +92,20 @@ class UserLogin(APIView):
         tags=['User Authentication'],
     )
     def post(self, request):
+        # Deserialize and validate incoming data
         serializer = UserLoginSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             user = serializer.validated_data
+            # Log the user in
             login(request, user)
-            # Include 'id' in the response data
+            # Respond with user details
             return Response({'id': user.user_id, 'email': user.email, 'username': user.username},
                             status=status.HTTP_200_OK)
 
-
 class UserLogout(APIView):
     """
-    post:
-    End a user's session.
+    API view for user logout.
     """
-
     permission_classes = (permissions.AllowAny,)
     authentication_classes = [SessionAuthentication]
 
@@ -101,14 +115,13 @@ class UserLogout(APIView):
         tags=['User Authentication'],
     )
     def post(self, request):
+        # Log the user out
         logout(request)
         return Response(status=status.HTTP_200_OK)
 
-
 class UserView(APIView):
     """
-    get:
-    Retrieve the currently logged in user's information.
+    API view to retrieve current user information.
     """
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [SessionAuthentication]
@@ -122,14 +135,13 @@ class UserView(APIView):
         tags=['User Profile'],
     )
     def get(self, request):
+        # Serialize the user data
         serializer = UserSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-
 class UserEdit(APIView):
     """
-    put:
-    Update the currently logged in user's information.
+    API view to update user information.
     """
     permission_classes = [permissions.IsAuthenticated, my_permissions.IsOwnerOrReadOnlyOrSuperuser]
     authentication_classes = [SessionAuthentication]
@@ -144,21 +156,16 @@ class UserEdit(APIView):
         tags=['User Profile'],
     )
     def put(self, request):
-        # Use the UserSerializer to validate the request data
+        # Deserialize and validate incoming data, then save it
         serializer = UserSerializer(request.user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            # Return the updated user data
             return Response({'user': serializer.data}, status=status.HTTP_200_OK)
-
-        # If the data is not valid, return the errors
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class ChangePasswordView(APIView):
     """
-    post:
-    Change the password for the currently logged in user.
+    API view to change user password.
     """
     permission_classes = (permissions.IsAuthenticated, my_permissions.IsOwnerOrReadOnlyOrSuperuser)
     authentication_classes = [SessionAuthentication]
@@ -173,28 +180,27 @@ class ChangePasswordView(APIView):
         tags=['User Profile'],
     )
     def post(self, request, *args, **kwargs):
+        # Deserialize and validate incoming data
         serializer = PasswordChangeSerializer(data=request.data)
         if serializer.is_valid():
-            # Check old password
             if not request.user.check_password(serializer.data.get('old_password')):
                 return Response({"old_password": ["Wrong password."]}, status=status.HTTP_400_BAD_REQUEST)
-            # set_password also hashes the password that the user will get
             request.user.set_password(serializer.data.get('new_password'))
             request.user.save()
-            # Updating the session hash to avoid logging the user out
-            update_session_auth_hash(request, request.user)
+            update_session_auth_hash(request, request.user)  # Prevent logout after password change
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class DeleteAccount(APIView):
     """
-    post:
-    Delete the currently logged in user's account.
+    API view for deleting a user account.
     """
+    # Permissions and authentication classes for the view
     permission_classes = [permissions.IsAuthenticated, my_permissions.IsOwnerOrReadOnlyOrSuperuser]
     authentication_classes = [SessionAuthentication]
 
+    # Swagger schema for documentation
     @swagger_auto_schema(
         operation_description="Delete the current user's account.",
         responses={
@@ -209,47 +215,57 @@ class DeleteAccount(APIView):
         user = request.user
         password = request.data.get('password')
 
-        # If password is not provided, return a bad request
+        # Validate that the password is provided
         if not password:
             return Response({"detail": "Password is required to delete account."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Check if provided password is correct
+        # Validate the password
         if not user.check_password(password):
             return Response({"detail": "Incorrect password."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Ensure the user has permissions to delete the account
+        # Check if the user has permission to delete the account
         if request.user == user or request.user.is_superuser:
+            # Update related records and deactivate the user
             EventRegistration.objects.filter(user=user).update(is_registered=False)
-
             user.is_active = False
             user.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-        # In case the user does not have permission
+        # Handle case where user does not have permission
         return Response({"detail": "You do not have permission to delete this account."},
                         status=status.HTTP_403_FORBIDDEN)
 
 
 class VerifyUserEmail(APIView):
+    """
+    API view for verifying a user's email.
+    """
+    # Allow any user to access this view
     permission_classes = [permissions.AllowAny]
     authentication_classes = [SessionAuthentication]
 
     def get(self, request, *args, **kwargs):
+        # Retrieve verification code and user ID from query parameters
         verification_code = request.query_params.get('code')
         user_id = request.query_params.get('user_id')
 
+        # Validate presence of verification code and user ID
         if not verification_code or not user_id:
             return Response({"detail": "Missing verification code or user ID."}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
+            # Retrieve the user with given verification code and user ID
             user = AppUser.objects.get(
                 verification_code=verification_code,
                 user_id=user_id,
                 is_active=False
             )
         except AppUser.DoesNotExist:
+            # Handle user not found or already active
             return Response({"detail": "Invalid verification code or user ID, or already active."},
                             status=status.HTTP_404_NOT_FOUND)
 
+        # Activate the user and save the changes
         user.is_active = True
         user.save()
 
@@ -258,14 +274,20 @@ class VerifyUserEmail(APIView):
 
 
 class ResetPassword(APIView):
+    """
+    API view for resetting a user's password.
+    """
+    # Allow any user to access this view
     permission_classes = [permissions.AllowAny]
     authentication_classes = [SessionAuthentication]
 
     def post(self, request, *args, **kwargs):
+        # Deserialize and validate incoming data
         serializer = ResetPasswordSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             email = serializer.validated_data['email']
             try:
+                # Retrieve the user by email
                 user = AppUser.objects.get(email=email)
 
                 # Generate a random verification code
@@ -273,6 +295,7 @@ class ResetPassword(APIView):
                 user.verification_code = verification_code
                 user.save()
 
+                # Send an email notification with the verification code
                 send_notification(
                     emails=[email],
                     subject="Password Reset Verification Code",
@@ -282,26 +305,38 @@ class ResetPassword(APIView):
                 return Response({"message": "Verification code sent to your email"}, status=status.HTTP_200_OK)
 
             except AppUser.DoesNotExist:
+                # Handle user not found
                 return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class VerifyAndUpdatePassword(APIView):
+    """
+    API view for verifying a password change request and updating the password.
+    """
+    # Allow any user to access this view
     permission_classes = [permissions.AllowAny]
     authentication_classes = [SessionAuthentication]
 
     def post(self, request, *args, **kwargs):
+        # Deserialize and validate incoming data
         serializer = VerificationSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
+            # Extract data from the validated serializer
             password_change_code = serializer.validated_data['password_change_code']
             new_password = serializer.validated_data['new_password']
             email = serializer.validated_data['email']
+
+            # Retrieve the user by email and password change code
             user = AppUser.objects.filter(email=email, password_change_code=password_change_code).first()
 
             if user:
+                # Update the user's password and clear the verification code
                 user.password = make_password(new_password)
-                user.password_change_code = None  # Clear the verification code
+                user.password_change_code = None
                 user.save()
 
                 return Response({"message": "Password has been reset successfully"}, status=status.HTTP_200_OK)
             else:
+                # Handle invalid verification code
                 return Response({"error": "Invalid verification code"}, status=status.HTTP_400_BAD_REQUEST)
+

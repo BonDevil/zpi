@@ -21,37 +21,42 @@ from .serializers import (EventSerializer, EventNotificationSerializer,
 logger = logging.getLogger('events')
 
 
+# BaseViewSet is a custom ModelViewSet with added features for permission and authentication
 class BaseViewSet(viewsets.ModelViewSet):
+    # Defines the permission classes and authentication used for this viewset
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnlyOrSuperuser]
     authentication_classes = [SessionAuthentication]
 
+    # Initializes a dictionary for filter parameters
     filter_params = {}
 
+    # Overrides get_queryset method to provide custom query filtering based on request parameters
     def get_queryset(self):
-        # If no query parameters have values, return default queryset
+        # If no query parameters are provided, return the default queryset
         if not self.request.query_params:
             queryset = super().get_queryset()
             return queryset.all()
 
-        # If there are query parameters, but they are invalid
+        # If query parameters are invalid, return an empty queryset
         elif all(self.request.query_params.get(param) is None for param in self.filter_params):
             return self.queryset.none()
 
+        # Process valid query parameters and filter the queryset accordingly
         queryset = self.queryset.all()
         query_params = self.request.query_params
-
         for param, lookup in self.filter_params.items():
             value = query_params.get(param)
             if value:
-                if param == 'category':  # Special handling for categories
+                if param == 'category':
                     value = value.split(',')
-                elif '_date' in param:  # for date fields
+                elif '_date' in param:
                     value = date.fromisoformat(value)
                 queryset = queryset.filter(**{lookup: value})
         return queryset
 
-
+# EventViewSet extends BaseViewSet with specific settings for Event model
 class EventViewSet(BaseViewSet):
+    # Sets permission classes, parser classes, queryset, serializer class, and filter parameters for Event
     permission_classes = [IsOwnerOrReadOnlyOrSuperuser]
     parser_classes = (MultiPartParser, FormParser, JSONParser)
     queryset = Event.objects.all()
@@ -69,51 +74,43 @@ class EventViewSet(BaseViewSet):
         'user': 'user'
     }
 
-    # to associate event with current user id
+    # Associates event with the current user upon creation
     def perform_create(self, serializer):
-        # Set the user to the current user
         serializer.save(user=self.request.user)
         logger.info(f"Event created with title '{serializer.instance.title}' by user {self.request.user.user_id}")
 
+    # Custom behavior for deleting an event, including permission checks and notifications
     def destroy(self, request, *args, **kwargs):
-        event = self.get_object()  # This will use the queryset to get the object, which already accounts for permissions.
+        event = self.get_object()  # Retrieves the event object considering permissions
 
-        # Check if the user is allowed to delete this event
+        # Permission check for deletion
         if not (event.user == request.user or request.user.is_superuser):
             raise PermissionDenied("You do not have permission to delete this event.")
 
-        # regular user emails registered for event
+        # Email logic for registered users and guests
         registered_emails = list(EventRegistration.objects.filter(event=event)
                                  .values_list('user__email', flat=True))
-
-        # add guest registrations to required email list
-        registered_emails += GuestRegistration.objects.filter(event=event, verified=True).values_list('email',
-                                                                                                      flat=True)
+        registered_emails += GuestRegistration.objects.filter(event=event, verified=True).values_list('email', flat=True)
         logger.info(f"Registered emails for event {event.id}: {registered_emails}")
         send_notification(emails=registered_emails, subject=DELETE_SUBJECT, content=DELETE_CONTENT)
         logger.info(f"Notification sent for event {event.id} with subject '{DELETE_SUBJECT}'.")
 
-        # Perform the deletion
-        event.delete()
+        event.delete()  # Deletes the event
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    # Custom update method to handle changes in event details and notify users accordingly
     def update(self, request, *args, **kwargs):
         event = self.get_object()
-        # Store original values before they are updated
-        original_start_date = event.start_date
-        original_end_date = event.end_date
-        original_location = event.location
+        # Storing original event details before update
+        original_start_date, original_end_date, original_location = event.start_date, event.end_date, event.location
 
+        # Updating the event
         serializer = self.get_serializer(event, data=request.data, partial=kwargs.pop('partial', False))
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
-        # After updating, check if the specific fields have changed
-        if (event.start_date != original_start_date or
-                event.end_date != original_end_date or
-                event.location != original_location):
-
-            # Prepare a message to notify users of the change
+        # Check for changes in event details and notify if necessary
+        if (event.start_date != original_start_date or event.end_date != original_end_date or event.location != original_location):
             message = "The details of event '{}' have changed.".format(event.title)
             if event.start_date != original_start_date:
                 message += "\nNew start date: {}".format(event.start_date)
@@ -122,20 +119,17 @@ class EventViewSet(BaseViewSet):
             if event.location != original_location:
                 message += "\nNew location: {}".format(event.location)
 
-            # regular user emails registered for event
             registered_emails = list(EventRegistration.objects.filter(event=event)
                                      .values_list('user__email', flat=True))
-
-            # add guest registrations to required email list
-            registered_emails += GuestRegistration.objects.filter(event=event, verified=True).values_list('email',
-                                                                                                          flat=True)
+            registered_emails += GuestRegistration.objects.filter(event=event, verified=True).values_list('email', flat=True)
             logger.info(f"Sending update notification for event {event.id} to emails: {registered_emails}")
             send_notification(emails=registered_emails, subject="Event Update Notification", content=message)
 
         return Response(serializer.data)
 
-
+# EventNotificationViewSet extends BaseViewSet with specific settings for EventNotification model
 class EventNotificationViewSet(BaseViewSet):
+    # Sets permission classes, queryset, serializer class, and filter parameters for EventNotification
     permission_classes = [CanViewAndPostOnly]
     queryset = EventNotification.objects.all()
     serializer_class = EventNotificationSerializer
@@ -146,6 +140,7 @@ class EventNotificationViewSet(BaseViewSet):
         'sent_date_end': 'sent_date__lte'
     }
 
+    # Custom create method to handle notifications tied to specific events
     def create(self, request, *args, **kwargs):
         event_id = request.data.get('event')
         event = Event.objects.filter(pk=event_id, user=request.user).first()
@@ -155,34 +150,26 @@ class EventNotificationViewSet(BaseViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # regular user emails registered for event
+        # Email logic for notifications
         registered_emails = list(EventRegistration.objects.filter(event=event_id)
                                  .values_list('user__email', flat=True))
-
-        # add guest registrations to required email list
-        registered_emails += GuestRegistration.objects.filter(event=event, verified=True).values_list('email',
-                                                                                                      flat=True)
-
+        registered_emails += GuestRegistration.objects.filter(event=event, verified=True).values_list('email', flat=True)
         logger.info(f"Registered emails for event {event_id}: {registered_emails}")
         send_notification(emails=registered_emails, subject=request.data['title'], content=request.data['content'])
         logger.info(f"Notification sent for event {event_id} with subject '{request.data['title']}'.")
 
         return super().create(request, *args, **kwargs)
 
+    # Custom queryset for viewing event notifications based on user permissions
     def get_queryset(self):
-        # First, filter based on the logged-in user
         if self.request.user.is_superuser:
             user_notifications = self.queryset.all()
         else:
-            registered_event_ids = EventRegistration.objects.filter(user=self.request.user).values_list(
-                'event', flat=True)
+            registered_event_ids = EventRegistration.objects.filter(user=self.request.user).values_list('event', flat=True)
             user_notifications = self.queryset.filter(event__in=registered_event_ids)
 
-        # Now apply other filters if any
+        # Filters for event-specific notifications
         query_params = self.request.query_params
-
-        # at /api/event-notifications user will see all his notifications
-        # at /api/event-notifications?event user will see all notifications for an event, if he's owner of it
         event = query_params.get('event')
         if event:
             try:
@@ -190,14 +177,13 @@ class EventNotificationViewSet(BaseViewSet):
                 if event.user == self.request.user:
                     user_notifications = EventNotification.objects.filter(event=event)
                 else:
-                    # If the user is neither the owner nor a superuser, return an empty queryset
                     return EventNotification.objects.none()
             except Event.DoesNotExist:
                 return EventRegistration.objects.none()
         for param, lookup in self.filter_params.items():
             value = query_params.get(param)
             if value:
-                if '_date' in param:  # for date fields
+                if '_date' in param:
                     value = date.fromisoformat(value)
                 user_notifications = user_notifications.filter(**{lookup: value})
 
