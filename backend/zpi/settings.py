@@ -10,16 +10,18 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 import os
+from dotenv import load_dotenv
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+load_dotenv()
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-qz)hu5hdvs&(&i4()dc^^jqbe==@yy)(@cn7_c1w4*sgxu)mi*'
+
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -42,6 +44,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework.authtoken',
     'django_celery_beat',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
@@ -101,9 +104,9 @@ CSRF_TRUSTED_ORIGINS = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_NAME'),
-        'USER': os.environ.get('POSTGRES_USER'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
+        'NAME': os.getenv("POSTGRES_NAME"),
+        'USER': os.getenv("POSTGRES_USER"),
+        'PASSWORD': os.getenv("POSTGRES_PASSWORD"),
         'HOST': 'db',
         'PORT': 5432
     },
@@ -174,10 +177,11 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 MEDIA_URL = "/media/"
 
 # mailing_system system
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = 'ogshoes0@gmail.com'
-EMAIL_HOST_PASSWORD = 'klqviscojknfwthr'
-EMAIL_PORT = '587'
+EMAIL_HOST = os.getenv("EMAIL_HOST")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+EMAIL_PORT = os.getenv("EMAIL_PORT")
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_USE_TLS = True
 

@@ -31,6 +31,8 @@ services:
       - ./backend:/code
       - ./media:/var/www/zpi/media/
       - ./logs:/code/logs/django
+    env_file:
+      - .env
     ports:
       - "8000:8000"
     environment:
