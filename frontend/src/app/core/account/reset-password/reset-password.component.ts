@@ -36,7 +36,7 @@ export class ResetPasswordComponent {
   }
 
   async reset() {
-    if (await this.accountService.resetPassword(this.resetForm.value.email, this.resetForm.value.password, this.resetForm.value.validationKey)) {
+    if (await this.accountService.resetPassword(this.resetForm.value.email, this.resetForm.value.newPassword, this.resetForm.value.validationKey)) {
       this.resetFailed = false;
       window.location.reload();
     } else {
