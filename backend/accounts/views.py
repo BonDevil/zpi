@@ -344,5 +344,5 @@ class VerifyAndUpdatePassword(APIView):
                 return Response({"message": "Password has been reset successfully"}, status=status.HTTP_200_OK)
             else:
                 # Handle invalid verification code
-                return Response({"error": "essa"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": "Invalid verification code"}, status=status.HTTP_400_BAD_REQUEST)
 
