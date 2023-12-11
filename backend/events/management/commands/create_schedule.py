@@ -16,7 +16,7 @@ class Command(BaseCommand):
 
         # Create a new schedule for every 1440 minutes (24 hours)
         schedule, created = IntervalSchedule.objects.get_or_create(
-            every=20,
+            every=1440,
             period=IntervalSchedule.MINUTES,
         )
 
