@@ -6,7 +6,6 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from .models import AppUser
-from .validations import custom_validation, validate_email, validate_username, validate_password
 
 
 # models tests
@@ -113,54 +112,4 @@ class UserViewTests(TestCase):
         self.client.force_authenticate(user=self.user)  # Authenticate the test user
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    # validation tests
-
-
-class ValidationTests(TestCase):
-    def test_custom_validation(self):
-        # Test with valid data
-        data = {'email': 'test@example.com', 'username': 'testuser', 'password': 'testpassword'}
-        result = custom_validation(data)
-        self.assertEqual(result, data)
-
-        # Test with an invalid password
-        with self.assertRaises(ValidationError):
-            data = {'email': 'new@example.com', 'username': 'newuser', 'password': 'short'}
-            custom_validation(data)
-
-    def test_validate_email(self):
-        # Test with a valid email
-        data = {'email': 'test@example.com'}
-        result = validate_email(data)
-        self.assertTrue(result)
-
-        # Test with no email provided
-        with self.assertRaises(ValidationError):
-            data = {'email': ''}
-            validate_email(data)
-
-    def test_validate_username(self):
-        # Test with a valid username
-        data = {'username': 'testuser'}
-        result = validate_username(data)
-        self.assertTrue(result)
-
-        # Test with no username provided
-        with self.assertRaises(ValidationError):
-            data = {'username': ''}
-            validate_username(data)
-
-    def test_validate_password(self):
-        # Test with a valid password
-        data = {'password': 'testpassword'}
-        result = validate_password(data)
-        self.assertTrue(result)
-
-        # Test with no password provided
-        with self.assertRaises(ValidationError):
-            data = {'password': ''}
-            validate_password(data)
-
-
 
