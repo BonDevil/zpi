@@ -9,10 +9,15 @@ import { AccountService } from '../account.service';
   styleUrls: ['./reset-password.component.css']
 })
 export class ResetPasswordComponent {
+  emailForm: FormGroup;
   resetForm: FormGroup;
+  keySent: boolean = false;
   resetFailed: boolean = false;
 
   constructor(private fb: FormBuilder, private accountService: AccountService, private router: Router) {
+    this.emailForm = this.fb.group({
+      email: ['', Validators.required]
+    });
     this.resetForm = this.fb.group({
       email: ['', Validators.required],
       newPassword: ['', Validators.required],
@@ -21,6 +26,14 @@ export class ResetPasswordComponent {
   }
 
   ngOnInit() {}
+
+  async sendKey() {
+    if (await this.accountService.sendKey(this.emailForm.value.email)) {
+      this.keySent = true;
+    } else {
+      this.keySent = false;
+    }
+  }
 
   async reset() {
     if (await this.accountService.resetPassword(this.resetForm.value.email, this.resetForm.value.password, this.resetForm.value.validationKey)) {

@@ -164,16 +164,31 @@ export class AccountService {
     }
   }
 
+    // Send reset password key method
+    async sendKey(email: string): Promise<boolean> {
+      let resetData = {
+        email: email
+      };
+  
+      try {
+        const response = await this.http.post<User>(`http://127.0.0.1:8000/api/accounts/reset-password`, resetData).toPromise();
+        return true;
+      } catch (error) {
+        console.error("Error during password reset:", error);
+        return false;
+      }
+    }
+
     // Reset password method
     async resetPassword(email: string, password: string, key: string): Promise<boolean> {
       let resetData = {
         email: email,
-        password: password,
-        key: key
+        new_password: password,
+        password_change_code: key
       };
   
       try {
-        const response = await this.http.post<User>(`http://127.0.0.1:8000/api/reset-password`, resetData).toPromise();
+        const response = await this.http.post<User>(`http://127.0.0.1:8000/api/accounts/verify-password-reset`, resetData).toPromise();
         return true;
       } catch (error) {
         console.error("Error during password reset:", error);
