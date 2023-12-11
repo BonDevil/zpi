@@ -16,6 +16,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { EditEventComponent } from './events/edit-event/edit-event.component';
 import { ProfileComponent } from './account/profile/profile.component';
 import { EditProfileComponent } from './account/edit-profile/edit-profile.component';
+import { ResetPasswordComponent } from './account/reset-password/reset-password.component';
 
 @NgModule({
   imports: [
@@ -43,7 +44,8 @@ import { EditProfileComponent } from './account/edit-profile/edit-profile.compon
     EventDetailsComponent,
     EditEventComponent,
     SignUpComponent,
-    CreateEventComponent
+    CreateEventComponent,
+    ResetPasswordComponent
   ]
 })
 export class CoreModule { }
