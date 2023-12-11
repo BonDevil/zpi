@@ -13,6 +13,7 @@ import { SignUpComponent } from './events/sign-up/sign-up.component';
 import { CreateEventComponent } from './events/create-event/create-event.component';
 import { EditProfileComponent } from './account/edit-profile/edit-profile.component';
 import { EditEventComponent } from './events/edit-event/edit-event.component';
+import { ResetPasswordComponent } from './account/reset-password/reset-password.component';
 
 const routes: Routes = [
   {
@@ -40,6 +41,9 @@ const routes: Routes = [
         path: 'profile/edit',
         component: EditProfileComponent,
         canActivate: [AuthGuard] 
+      }, {
+        path: 'reset-password',
+        component: ResetPasswordComponent
       }, {
         path: 'my-events',
         component: MyEventsComponent,
