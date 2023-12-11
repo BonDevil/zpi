@@ -297,15 +297,15 @@ class ResetPassword(APIView):
                 user = AppUser.objects.get(email=email)
 
                 # Generate a random verification code
-                verification_code = get_random_string(length=6, allowed_chars='0123456789')
-                user.verification_code = verification_code
+                password_change_code = get_random_string(length=6, allowed_chars='0123456789')
+                user.password_change_code = password_change_code
                 user.save()
 
                 # Send an email notification with the verification code
                 send_notification(
                     emails=[email],
                     subject="Password Reset Verification Code",
-                    content=f"Your verification code is: {verification_code}"
+                    content=f"Your verification code is: {password_change_code}"
                 )
 
                 return Response({"message": "Verification code sent to your email"}, status=status.HTTP_200_OK)
