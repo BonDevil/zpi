@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { EventService } from '../event.service';
 import { Event } from '../../models';
@@ -17,20 +17,58 @@ export class CreateEventComponent implements OnInit {
   modalText: string = '';
   errors = "";
   selectedFile = undefined;
+  eventId?: number;
 
   constructor(private fb: FormBuilder, private router: Router, private eventService: EventService) {
+    const dateValidator = (control: AbstractControl): { [key: string]: boolean } | null => {
+      const startDate = control.get('start_date')?.value;
+      const endDate = control.get('end_date')?.value;
+      const registrationEndDate = control.get('registration_end_date')?.value;
+      const today = new Date();
+    
+      if (startDate && endDate) {
+        if (new Date(startDate) >= new Date(endDate)) {
+          return { 'invalidDateRange': true }; // Start date should be before end date
+        }
+    
+        if (new Date(startDate) < today) {
+          return { 'invalidStartDate': true }; // Start date should be today or after today
+        }
+      }
+    
+      if (registrationEndDate && startDate) {
+        if (new Date(registrationEndDate) >= new Date(startDate)) {
+          return { 'invalidRegistrationEndDate': true }; // Registration end date should be before start date
+        }
+    
+        if (new Date(registrationEndDate) < today) {
+          return { 'invalidRegistrationEndDateToday': true }; // Registration end date should be today or after today
+        }
+      }
+    
+      return null;
+    };
+    const nonNegativeValidator = (control: AbstractControl): { [key: string]: boolean } | null => {
+      const value = control.value;
+    
+      if (value !== null && value < 0) {
+        return { 'nonNegative': true }; // Value cannot be negative
+      }
+    
+      return null;
+    };
     this.createEventForm = this.fb.group({
       title: ['', Validators.required],
       description: ['', Validators.required],
       location: ['', Validators.required],
       is_public: [false, Validators.required],
-      price: [null, Validators.required],
-      capacity: [null],
+      price: [null, [Validators.required, nonNegativeValidator]],
+      capacity: [null, [nonNegativeValidator]],
       registration_end_date: [null, Validators.required],
       start_date: [null, Validators.required],
       end_date: [null, Validators.required],
-      photo: [null]
-    });
+      photo: [null],
+    }, { validator: dateValidator });
   }
 
   async ngOnInit() {
@@ -57,8 +95,20 @@ export class CreateEventComponent implements OnInit {
         this.errors = "";
         Object.keys(this.createEventForm.controls).forEach(controlName => {
           const control = this.createEventForm.get(controlName);
-          if (control && control.invalid){
-            this.errors += controlName + " is required\n"
+          if (control && control.invalid) {
+            if (control.errors?.['nonNegative']) {
+              this.errors += `${controlName} cannot be negative\n`;
+            } else if (control.errors?.['invalidDateRange']) {
+              this.errors += `Start date should be before end date\n`;
+            } else if (control.errors?.['invalidStartDate']) {
+              this.errors += `Start date cannot be in past\n`;
+            } else if (control.errors?.['invalidRegistrationEndDate']) {
+              this.errors += `Registration end date should be before start date\n`;
+            } else if (control.errors?.['invalidRegistrationEndDateToday']) {
+              this.errors += `Registration end date cannot be in past\n`;
+            } else {
+              this.errors += `${controlName} is required\n`;
+            }
           }
         });
         throw new Error(this.errors);
