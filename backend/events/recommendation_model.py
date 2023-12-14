@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pandas as pd
 from django.core.exceptions import ObjectDoesNotExist
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -13,7 +15,10 @@ from .models import EventRegistration, Event
 def get_recommendations(user_email):
     try:
         # Retrieve all events and registrations
-        event_objects = Event.objects.all()
+        current_date = datetime.now().date()
+        event_objects = Event.objects.filter(start_date__gte=current_date)
+
+
         registration_objects = EventRegistration.objects.filter(user__email=user_email)
 
         # Convert to DataFrames
@@ -49,13 +54,17 @@ def get_recommendations(user_email):
         # Sort the events based on the similarity scores
         sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
 
-        # Get the scores of the 10 most similar events
-        sim_scores = sim_scores[1:4]
+        # Filter out events the user has already registered for
+        filtered_sim_scores = [score for score in sim_scores if events['id'].iloc[score[0]] not in user_likes]
+
+        # Select the top recommendations, excluding the ones user already likes
+        # Adjust the number based on how many recommendations you want
+        filtered_sim_scores = filtered_sim_scores[:3]
 
         # Get the event indices
-        event_indices = [i[0] for i in sim_scores]
+        event_indices = [i[0] for i in filtered_sim_scores]
 
-        # Return the top 10 most similar events
+        # Return the top most similar events
         return events['id'].iloc[event_indices].tolist()
 
     except ValueError as ve:

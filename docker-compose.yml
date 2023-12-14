@@ -95,6 +95,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     command: python3 manage.py test
+    env_file:
+      - .env
     volumes:
       - ./backend:/code
       - ./logs:/code/logs/django

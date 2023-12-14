@@ -1,16 +1,17 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
-
+from django.contrib.auth import get_user_model
 from accounts.models import AppUser
 from events.tasks import send_verification_email
 
 UserModel = AppUser
+User = get_user_model()
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     class Meta:
-        model = UserModel
+        model = AppUser
         fields = ('user_id', 'email', 'username', 'password')
         extra_kwargs = {'password': {'write_only': True}}
 
@@ -19,17 +20,12 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         return value  # Password should be write-only
 
     def create(self, clean_data):
-        user = UserModel(email=clean_data['email'],
+        user = AppUser(email=clean_data['email'],
                          username=clean_data['username'])
         user.set_password(clean_data['password'])
         validate_password(clean_data['password'], user)
         user.save()
         return user
-
-
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
 
 
 class UserLoginSerializer(serializers.Serializer):

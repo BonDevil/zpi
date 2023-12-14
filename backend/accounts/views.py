@@ -56,7 +56,7 @@ class UserRegister(APIView):
         serializer = UserRegisterSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             # Create a user instance from the validated data
-            user = AppUser(**serializer.validated_data)
+            user = serializer.save()
 
             # Generate a unique verification code
             verification_code = str(uuid.uuid4())
@@ -66,18 +66,20 @@ class UserRegister(APIView):
             try:
                 send_verification_email(user.email, verification_code, user_id=user.user_id)
                 # Save the user to the database only after successful email sending
-                user.save()
 
+                user.save()
                 # Prepare the response data
                 response_data = serializer.data
-                response_data['id'] = user.id
+                response_data['id'] = user.user_id
                 return Response(response_data, status=status.HTTP_201_CREATED)
             except SMTPException:
                 # Handle SMTP errors
+                user.delete()
                 return Response({"error": "SMTP Server is not available"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         # If data is invalid, return an error response
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class UserLogin(APIView):
     """
@@ -108,6 +110,7 @@ class UserLogin(APIView):
             return Response({'id': user.user_id, 'email': user.email, 'username': user.username},
                             status=status.HTTP_200_OK)
 
+
 class UserLogout(APIView):
     """
     API view for user logout.
@@ -124,6 +127,7 @@ class UserLogout(APIView):
         # Log the user out
         logout(request)
         return Response(status=status.HTTP_200_OK)
+
 
 class UserView(APIView):
     """
@@ -144,6 +148,7 @@ class UserView(APIView):
         # Serialize the user data
         serializer = UserSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class UserEdit(APIView):
     """
@@ -168,6 +173,7 @@ class UserEdit(APIView):
             serializer.save()
             return Response({'user': serializer.data}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ChangePasswordView(APIView):
     """
@@ -345,4 +351,3 @@ class VerifyAndUpdatePassword(APIView):
             else:
                 # Handle invalid verification code
                 return Response({"error": "Invalid verification code"}, status=status.HTTP_400_BAD_REQUEST)
-

@@ -37,7 +37,7 @@ class AppUserModelTestCase(TestCase):
         self.assertTrue(superuser.is_staff)
 
     def test_str_method(self):
-        self.assertEqual(str(self.user), 'testuser')
+        self.assertEqual(str(self.user), 'testuser@example.com')
 
     def test_email_required(self):
         with self.assertRaises(ValueError):
@@ -88,7 +88,7 @@ class UserViewTests(TestCase):
         data = {
             'email': 'newuser@example.com',
             'username': 'newuser',
-            'password': 'newpassword',
+            'password': 'newpassword@#$DS',
         }
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
