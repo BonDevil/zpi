@@ -35,7 +35,14 @@ export class EventService {
     if(!this.accountService.isLoggedIn()){
       return [];
     }
-    return await this.listEventsAndRecommended(`http://127.0.0.1:8000/api/user-recommendation`);
+  const recommended = await this.listEventsAndRecommended(`http://127.0.0.1:8000/api/user-recommendation`);
+    const events = recommended.map(async (event) => {
+      const eventId = event.id;
+      return await this.getEventById(eventId);
+    });
+
+    return await Promise.all(events);
+
   }
   // Retrieve a list of events based on applied filters
   async listEventsAndRecommended(url: string): Promise<Event[]> {
