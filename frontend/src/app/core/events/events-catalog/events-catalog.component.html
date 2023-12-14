@@ -131,7 +131,7 @@
     <div class="col-md-4" *ngFor="let event of recommended">
       <div class="d-flex h-100">
       <div class="card mb-4 flex-fill" (click)="onCardClick(event)">
-        <div class="card-text mb-2" style="color: dodgerblue;">
+        <div class="card-text mb-2 text-end" style="color: dodgerblue; padding-right: 15px;">
           You may like this
         </div>
         <img src="{{ event.photo }}" class="card-img-top" alt="{{ event.title }}">
